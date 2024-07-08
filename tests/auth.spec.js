@@ -1,5 +1,5 @@
 const request = require('supertest')
-const app = require('../bin/www')
+const app = require('../api/index')
 describe('Authenticate user into the application', () => {
     it('Should Register User Successfully with Default Organisation', (done) => {
 

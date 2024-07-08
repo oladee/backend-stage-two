@@ -5,7 +5,7 @@
   "scripts": {
     "test": "cross-env NODE_ENV=test jest --testTimeout=100000",
     "pretest": "cross-env NODE_ENV=test",
-    "start": "nodemon ./bin/www"
+    "start": "nodemon ./api/index"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
