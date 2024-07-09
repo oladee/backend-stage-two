@@ -10,7 +10,11 @@ const getRecord = async(req,res,next)=>{
           status : 'success',
           message : 'Welcome',
           data : {
-            ...userDetails
+            userId : userDetails.userId,
+            firstName : userDetails.firstName,
+            lastName : userDetails.lastName,
+            email : userDetails.email,
+            phone : userDetails.phone
           }
         })
       } catch (error) {
@@ -69,7 +73,7 @@ const createNewOrganisation = async(req,res,next)=>{
             })
   
   
-            const user = await User.findOne({ where : {firstName : 'oladee'}})
+            const user = await User.findOne({ where : {firstName : req.user.firstName}})
   
             await user.addOrganisation(organ, {through : {UserId : user.userId, OrganisationId : organ.orgId}})
   
@@ -84,6 +88,7 @@ const createNewOrganisation = async(req,res,next)=>{
             })
   
         } catch (error) {
+          console.log(error)
           res.status(400).send({
             status: "Bad Request",
             message: "Client error",
@@ -144,7 +149,6 @@ const createNewOrganisation = async(req,res,next)=>{
        if(newey.length > 0 ){
         const result = await userDetails.addOrganisation(orgDetails, {through : {UserId : userDetails.userId, OrganisationId : orgDetails.orgId}})
          res.send({
-          result,
            status : 'success',
            message: "User added to organisation successfully",
          })
