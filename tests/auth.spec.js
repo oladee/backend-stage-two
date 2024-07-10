@@ -1,131 +1,213 @@
 const request = require('supertest')
 const app = require('../api/index')
-describe('Authenticate user into the application', () => {
-    it('Should Register User Successfully with Default Organisation', (done) => {
 
-        request(app).post('/auth/register').send({
-            firstName : 'tunes',
-            lastName  : 'kiddy',
-            email : 'lad@gmail.com',
-            password : "BAMI1"
-        })
-        .then((respone)=>{
-            expect(respone.body).toHaveProperty('data')
-            done()
-        })
-       
-    })
-    it('Should Log the user in successfully', (done) => {
+let accessToken = "";
 
-        request(app).post('/auth/login').send({
-            email : 'lad@gmail.com',
-            password : "BAMI1"
-        })
-        .then((respone)=>{
-            expect(respone.body.data).toHaveProperty('accessToken')
-            expect(respone.body.data).toHaveProperty('user')
-            done()
-        })
-    })
-    it('Should Fail If firstName Field is Missing', (done) => {
+async function userRegistration() {
+  const userData = {
+    firstName: "Oladee",
+    lastName: "tunes",
+    email: "tunes@example.com",
+    password: "password123",
+    phone: "1234567890",
+  };
 
-        request(app).post('/auth/register').send({
-            lastName  : 'kiddy',
-            email : 'lade@gmail.com',
-            password : "BAMI1"
-        })
-        .then((respone)=>{
-            expect(respone.statusCode).toEqual(422)
-            expect(respone.body).toEqual({errors : [
-                {
-                field : 'firstName',
-                message : "firstName cannot be empty"
-                }
-            ]})
-            done()
-        })
-    })
-    it('Should Fail If lastName Field is Missing', (done) => {
+  await request(app)
+    .post("/auth/register")
+    .send(userData)
+    .expect(201)
+    .then((response) => {
+      accessToken = response.body.data.accessToken;
+    });
+}
 
-        request(app).post('/auth/register').send({
-            firstName : 'tunes',
-            email : 'lade@gmail.com',
-            password : "BAMI1"
-        })
-        .then((respone)=>{
-            expect(respone.statusCode).toEqual(422)
-            expect(respone.body).toEqual({errors : [
-                {
-                field : 'lastName',
-                message : "lastName cannot be empty"
-                }
-            ]})
-            done()
-        })
-    })
-    it('Should Fail If email Field is Missing', (done) => {
+describe('Auth Endpoints', ()=>{
+    describe('POST /auth/register', ()=>{
+        it('Should register a new user ', async()=>{
+            const userDetails = {
+                firstName: "credit",
+                lastName: "alert",
+                email: "alerts@example.com",
+                password: "creditalert",
+                phone: "09048488923",
+            }
 
-        request(app).post('/auth/register').send({
-            firstName : 'tunes',
-            lastName  : 'kiddy',
-            password : "BAMI1"
-        })
-        .then((respone)=>{
-            expect(respone.statusCode).toEqual(422)
-            expect(respone.body).toEqual({errors : [
-                {
-                field : 'email',
-                message : "email cannot be empty"
-                }
-            ]})
-            done()
-        })
-    })
-    it('Should Fail If password Field is Missing', (done) => {
+            const expectedOrganisationName = `${userDetails.firstName}'s Organisation`
 
-        request(app).post('/auth/register').send({
-            firstName : 'tunes',
-            lastName  : 'kiddy',
-            email : 'lade@gmail.com',
+            const res = await request(app)
+            .post("/auth/register")
+            .send(userDetails)
+            .expect(201);
+
+            const { user, accessToken } = res.body.data;
+            expect(res.body.status).toBe("success");
+
+            expect(res.body.data.accessToken).toBeDefined();
+
+            expect(res.body.data.user.email).toBe(userDetails.email);
+
+            expect(user.userId).toBeTruthy();
+
+            expect(user.firstName).toBe(userDetails.firstName);
+
+            expect(user.lastName).toBe(userDetails.lastName);
+
+            expect(user.email).toBe(userDetails.email);
+
+            expect(user.phone).toBe(userDetails.phone);
+
+            expect(accessToken).toBeTruthy();
+
+            expect(user.organisation.name).toBe(expectedOrganisationName);
         })
-        .then((respone)=>{
-            expect(respone.statusCode).toEqual(422)
-            expect(respone.body).toEqual({errors : [
-                {
-                field : 'password',
-                message : "password cannot be empty"
-                }
-            ]})
-            done()
+        it("should fail if required fields are missing", async () => {
+            const userDetails = {
+              firstName: "creaty",
+              lastName: "tidy",
+              password: "yarnyarn",
+              phone: "8230238023",
+            };
+      
+            const res = await request(app)
+            .post("/auth/register")
+            .send(userDetails)
+            .expect(422)
+            expect(res.body.errors[0].field).toBe("email");
+            expect(res.body.errors[0].message).toContain("email cannot be empty");
+        });
+
+        it('Should fail if duplicate email registration', async()=>{
+            await userRegistration()
+
+            const duplicateUserEmail = {
+                firstName: "Oladee",
+                lastName: "tunes",
+                email: "tunes@example.com",
+                password: "password123",
+                phone: "1234567890",
+            }
+            
+            await request(app)
+            .post("/auth/register")
+            .send(duplicateUserEmail)
+            .expect(422)
+            .expect((res) => {
+            expect(res.body.errors[0].field).toBe("email");
+            expect(res.body.errors[0].message).toContain("email must be unique");
+            });
         })
     })
-    it("Should Fail if there's Duplicate Email or UserID", (done) => {
 
-        request(app).post('/auth/register').send({
-            firstName : 'tunes',
-            lastName  : 'kiddy',
-            email : 'ladifa@gmail.com',
-            password : 'BAMI1'
+    describe('POST auth/login', ()=>{
+        beforeEach(async ()=>{
+            await userRegistration()
         })
-        .then(()=>{
-            request(app).post('/auth/register').send({
-                firstName : 'tunes',
-                lastName  : 'kiddy',
-                email : 'ladifa@gmail.com',
-                password : 'BAMI1'
-            })
-            .then((respone)=>{
-                expect(respone.statusCode).toEqual(422)
-                expect(respone.body).toEqual({errors : [
-                    {
-                    field : 'email',
-                    message : "email must be unique"
-                    }
-                ]})
-                done()
-            })
+
+        it('Should log in user successfully', async()=>{
+            const credent = {
+                email: "tunes@example.com",
+                password: "password123",
+            }
+            await request(app)
+            .post("/auth/login")
+            .send(credent)
+            .expect(200)
+            .expect((res) => {
+                const { user, accessToken } = res.body.data;
+                expect(user.userId).toBeTruthy();
+                expect(user.firstName).toBe("Oladee");
+                expect(user.lastName).toBe("tunes");
+                expect(user.email).toBe("tunes@example.com");
+                expect(accessToken).toBeTruthy();
+            });
         })
-        
-        
+
+        it('Should fail is credentials are wrong', async()=>{
+            const incorrectCredent = {
+                email: "tunes@example.com",
+                password: "passwo123",
+            }
+
+            await request(app)
+            .post("/auth/login")
+            .send(incorrectCredent)
+            .expect(401)
+            .expect((res) => {
+                expect(res.body.status).toBe("Bad request");
+                expect(res.body.message).toBe(
+                    "Authentication failed: Wrong Password"
+                );
+            });
+        })
     })
-  })
+})
+
+describe('Organisation Endpoints',()=>{
+    beforeEach(async()=>{
+        await userRegistration()
+    })
+
+    describe("POST /api/organisations", () => {
+        it("should create a new organisation", async () => {
+          const newOrganisation = {
+            name: "Candy Organisation",
+            description: "Candy or nothing",
+          };
+    
+          await request(app)
+            .post("/api/organisations")
+            .set("Authorization", `Bearer ${accessToken}`)
+            .send(newOrganisation)
+            .expect(201)
+            .expect((res) => {
+              const organisation = res.body.data;
+              expect(organisation.orgId).toBeTruthy();
+              expect(organisation.name).toBe(newOrganisation.name);
+              expect(organisation.description).toBe(newOrganisation.description);
+            });
+        });
+    });
+
+    describe('GET /api/organisations/:orgId',()=>{
+        it('Should retrieve organisation details via ID', async()=>{
+            let orgId = "";
+
+            const newOrganisationData = {
+                name: "New Tumbling Organisation",
+                description: "Desc of New Organisation",
+            };
+
+            await request(app)
+            .post("/api/organisations")
+            .set("Authorization", `Bearer ${accessToken}`)
+            .send(newOrganisationData)
+            .expect(201)
+            .then((res) => {
+                orgId = res.body.data.orgId;
+            });
+
+            await request(app)
+            .get(`/api/organisations/${orgId}`)
+            .set("Authorization", `Bearer ${accessToken}`)
+            .expect(200)
+            .expect((res) => {
+                const organisation = res.body.data;
+                expect(organisation.orgId).toBe(orgId);
+                expect(organisation.name).toBe(newOrganisationData.name);
+                expect(organisation.description).toBe(newOrganisationData.description);
+            });
+        })
+        it("should fail if organisation ID does not exist", async () => {
+            const nonExistingOrg = "I-dont-exist";
+      
+            await request(app)
+              .get(`/api/organisations/${nonExistingOrg}`)
+              .set("Authorization", `Bearer ${accessToken}`)
+              .expect(404)
+              .expect((res) => {
+                expect(res.body.status).toBe("Not Found");
+                expect(res.body.message).toBe("Organisation not found");
+              });
+          });
+    })
+})

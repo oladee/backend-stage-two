@@ -6,9 +6,16 @@ const getRecord = async(req,res,next)=>{
       try {
         const userId = req.params.id
         const userDetails = await User.findOne({where : {userId}, attributes : { exclude: ['password', 'createdAt', 'updatedAt', 'id'] }})
+        if(!userDetails){
+          return res.status(404).json({
+            status: "Not Found",
+            message: "User not found",
+            statusCode: 404,
+          });
+        }
         res.status(200).send({
           status : 'success',
-          message : 'Welcome',
+          message : "User retrieved successfully",
           data : {
             userId : userDetails.userId,
             firstName : userDetails.firstName,
@@ -18,7 +25,11 @@ const getRecord = async(req,res,next)=>{
           }
         })
       } catch (error) {
-        res.send(error)
+        return res.status(400).json({
+          status: "Bad request",
+          message: "Client error",
+          statusCode: 400,
+        });
       }
     }else {
       res.status(401).send('Unauthorized')
@@ -29,7 +40,7 @@ const getRecord = async(req,res,next)=>{
 
     try {
       const result = await User.findOne({
-        where : {email : req.user.email},
+        where : {userId : req.user.userId},
         include : {
           model : Organisation,
           attributes : ['orgId', 'name', 'description'],
@@ -69,7 +80,7 @@ const createNewOrganisation = async(req,res,next)=>{
   
             const organ = await Organisation.create({
                 ...req.body,
-                name : `${name}'s Organisation`
+                name : `${name}`
             })
   
   
@@ -77,7 +88,7 @@ const createNewOrganisation = async(req,res,next)=>{
   
             await user.addOrganisation(organ, {through : {UserId : user.userId, OrganisationId : organ.orgId}})
   
-            res.status(200).send({
+            res.status(201).send({
               status : 'success',
               message : 'Organisation created successfully',
               data : {
@@ -109,8 +120,13 @@ const createNewOrganisation = async(req,res,next)=>{
          }
        }
      })
-       const newey = orgDetails.Users.filter((x)=> x.userId == req.user.userId)
-       if(newey.length > 0 ){
+     if(!orgDetails){
+      return res.status(404).json({
+        status: "Not Found",
+        message: "Organisation not found",
+        statusCode: 404,
+      });
+     }
          res.send({
            status : 'success',
            message : 'Welcome',
@@ -120,15 +136,12 @@ const createNewOrganisation = async(req,res,next)=>{
              description : orgDetails.description
            }
          })
-       }else{
-         res.status(401).send('Unauthorized')
-       }
     } catch (error) {
-      res.status(400).send({
-        "status": "Bad Request",
-        "message": "Client error",
-        "statusCode": 400
-    })
+      res.status(404).json({
+        status: "Not Found",
+        message: "Organisation not found",
+        statusCode: 404,
+      });
     }
   }
 
@@ -145,16 +158,19 @@ const createNewOrganisation = async(req,res,next)=>{
        }
      })
        const userDetails = await User.findOne({where : {userId}})
-       const newey = orgDetails.Users.filter((x)=> x.userId == req.user.userId)
-       if(newey.length > 0 ){
-        const result = await userDetails.addOrganisation(orgDetails, {through : {UserId : userDetails.userId, OrganisationId : orgDetails.orgId}})
+       if(!orgDetails|| !userDetails){
+        return res.status(404).json({
+          status: "Not Found",
+          message: "Organisation or User not found",
+          statusCode: 404,
+        });
+       }
+        await userDetails.addOrganisation(orgDetails, {through : {UserId : userDetails.userId, OrganisationId : orgDetails.orgId}})
          res.send({
            status : 'success',
            message: "User added to organisation successfully",
          })
-       }else{
-         res.status(401).send('Unauthorized')
-       }
+
     } catch (error) {
       res.status(400).send({
         "status": "Bad Request",

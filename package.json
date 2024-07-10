@@ -3,8 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "test": "cross-env NODE_ENV=test jest --testTimeout=100000",
-    "pretest": "cross-env NODE_ENV=test",
+    "test": "jest --forceExit",
     "start": "nodemon ./api/index"
   },
   "dependencies": {
@@ -31,7 +30,9 @@
     "testEnvironment": "node",
     "coveragePathIgnorePatterns": [
       "/node_modules/"
-    ]
+    ],
+    "setupFilesAfterEnv": ["./tests/setup.js"],
+    "testTimeout": 100000
   },
   "devDependencies": {
     "cross-env": "^7.0.3",

@@ -64,7 +64,8 @@ const register = async (req,res,next)=>{
                          firstName : user.firstName,
                          lastName : user.lastName,
                          email : user.email,
-                         phone : user.phone
+                         phone : user.phone,
+                         organisation : organ
                      }
                  }
              })
@@ -126,6 +127,12 @@ const register = async (req,res,next)=>{
                             }
                         }
                     })
+                }else{
+                    return res.status(401).json({
+                        status: "Bad request",
+                        message: "Authentication failed: Wrong Password",
+                        statusCode: 401,
+                      });
                 }
             }else{
                 res.status(401).send({
